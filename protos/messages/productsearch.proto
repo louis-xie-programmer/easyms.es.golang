@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option go_package = "easyms-es/protos/messages";
+option csharp_namespace = "GrpcSearchClient.Messages";
+
+package messages;
+
+// 产品搜索参数
+message ProductSearchParam {
+  string KeyWord = 1;
+}
+
+message Tokens {
+  repeated Token Tokens =1;
+}
+
+message Token {
+  string Token  = 1;
+  int32  StartOffset = 2;
+  int32  EndOffset  = 3;
+  string Type  = 4;
+  int32  Position = 5;
+  string OldToken = 6;
+}

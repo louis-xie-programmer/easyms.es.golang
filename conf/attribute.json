@@ -1,0 +1,132 @@
+{
+    "AttributeNameDels": [
+        "Manufacturer",
+        "Brand",
+        "Type",
+        "Product"
+    ],
+    "AttributeValDels": [
+        "Details",
+        "-",
+        "*",
+        "null",
+        "--"
+    ],
+    "AttributeValProductReplace": [
+        {
+            "key": "~ ",
+            "val": "~"
+        }
+    ],
+    "AttributeNameProductReplace": [
+        {
+            "key": "- ",
+            "val": ""
+        },
+        {
+            "key": "~ ",
+            "val": "~"
+        },
+        {
+            "key": "-Max",
+            "val": "(Max)",
+            "flag": "right"
+        },
+        {
+            "key": "(A)",
+            "val": "",
+            "if": "Current",
+            "flag": "right"
+        },
+        {
+            "key": "(V)",
+            "val": "",
+            "if": "Voltage",
+            "flag": "right"
+        }
+    ],
+    "AttributeNameAllReplace": [
+        {
+            "key": "Product Length",
+            "val": "Length"
+        },
+        {
+            "key": "Length - mm",
+            "val": "Length (mm)"
+        },
+        {
+            "key": "Product Length (mm)",
+            "val": "Length (mm)"
+        },
+        {
+            "key": "Length - mm",
+            "val": "Length (mm)"
+        },
+        {
+            "key": "Product Height (mm)",
+            "val": "Height (mm)"
+        },
+        {
+            "key": "Height - mm",
+            "val": "Height (mm)"
+        },
+        {
+            "key": "Product Height",
+            "val": "Height"
+        },
+        {
+            "key": "Product Width",
+            "val": "Width"
+        },
+        {
+            "key": "Product Width (mm)",
+            "val": "Width (mm)"
+        },
+        {
+            "key": "Width - mm",
+            "val": "Width (mm)"
+        }
+    ],
+    "AttributeValCompare": [
+        {
+            "key": "Width (mm)",
+            "val": "Width"
+        },
+        {
+            "key": "Height (mm)",
+            "val": "Height"
+        },
+        {
+            "key": "Height (Max)",
+            "val": "Height"
+        },
+        {
+            "key": "Weight (g)",
+            "val": "Weight"
+        },
+        {
+            "key": "Length (mm)",
+            "val": "Length"
+        }
+    ],
+    "AttributeValRegexReplace": [
+        {
+            "nameregex": ".*(Weight).*",
+            "valregex": "[0-9]+([ ]+)[mk]?g"
+        },
+        {
+            "nameregex": ".*(Height|Thickness|Depth|Length|Diameter|Lead|Size).*",
+            "valregex": "[0-9]+([ ]+)[mμ]m"
+        }
+    ],
+    "AttributeType": [
+        {
+            "key": "Product Status",
+            "val": "Supply Chain"
+        },
+        {
+            "key": "Applications",
+            "val": "Supply Chain"
+        }
+    ]
+}

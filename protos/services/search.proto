@@ -1,0 +1,30 @@
+syntax = "proto3";
+import "protos/messages/productsearch.proto";
+import "protos/messages/pricesearch.proto";
+
+import "protos/google/api/annotations.proto";
+
+option go_package = "easyms-es/protos/services";
+option csharp_namespace = "GrpcSearchClient";
+
+package services;
+
+service ProductsSearchService {
+  // 搜索关键词分析
+  rpc Analyze (messages.ProductSearchParam) returns (messages.Tokens){
+    option (google.api.http) = {
+      post: "/v1/Analyze"
+      body: "*"
+    };
+  }
+}
+
+service PriceSearchService {
+  // 单产品的价格搜索
+  rpc SearchPrices (messages.PriceSearchParam) returns (messages.SearchPricesResult){
+    option (google.api.http) = {
+      post: "/v1/SearchPrices"
+      body: "*"
+    };
+  }
+}

@@ -1,0 +1,5 @@
+stockprice:
+    cron: 0/2 * * * * ?
+    lastid: 519959212483296
+    limit: 3000
+    status: 0

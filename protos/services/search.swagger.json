@@ -1,0 +1,269 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "protos/services/search.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "ProductsSearchService"
+    },
+    {
+      "name": "PriceSearchService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/Analyze": {
+      "post": {
+        "summary": "搜索关键词分析",
+        "operationId": "ProductsSearchService_Analyze",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/messagesTokens"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/messagesProductSearchParam"
+            }
+          }
+        ],
+        "tags": [
+          "ProductsSearchService"
+        ]
+      }
+    },
+    "/v1/SearchPrices": {
+      "post": {
+        "summary": "单产品的价格搜索",
+        "operationId": "PriceSearchService_SearchPrices",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/messagesSearchPricesResult"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/messagesPriceSearchParam"
+            }
+          }
+        ],
+        "tags": [
+          "PriceSearchService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "messagesESStockPrice": {
+      "type": "object",
+      "properties": {
+        "SID": {
+          "type": "string"
+        },
+        "ProductName": {
+          "type": "string"
+        },
+        "DistributorType": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "DistributorID": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Distributor": {
+          "type": "string"
+        },
+        "StockNum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Currency": {
+          "type": "string"
+        },
+        "Price1": {
+          "type": "number",
+          "format": "float"
+        },
+        "Price2": {
+          "type": "number",
+          "format": "float"
+        },
+        "Price3": {
+          "type": "number",
+          "format": "float"
+        },
+        "Price4": {
+          "type": "number",
+          "format": "float"
+        },
+        "Price5": {
+          "type": "number",
+          "format": "float"
+        },
+        "UpdatedUtc": {
+          "type": "string"
+        },
+        "IsAuthorizeddealer": {
+          "type": "boolean"
+        }
+      },
+      "title": "产品价格"
+    },
+    "messagesPriceSearchParam": {
+      "type": "object",
+      "properties": {
+        "PID": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "From": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "单型号下的产品价格搜索参数"
+    },
+    "messagesProductSearchParam": {
+      "type": "object",
+      "properties": {
+        "KeyWord": {
+          "type": "string"
+        }
+      },
+      "title": "产品搜索参数"
+    },
+    "messagesSearchPricesResult": {
+      "type": "object",
+      "properties": {
+        "PID": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "From": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Size": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/messagesESStockPrice"
+          }
+        }
+      },
+      "title": "单型号下的产品价格返回结果"
+    },
+    "messagesToken": {
+      "type": "object",
+      "properties": {
+        "Token": {
+          "type": "string"
+        },
+        "StartOffset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "EndOffset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Type": {
+          "type": "string"
+        },
+        "Position": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "OldToken": {
+          "type": "string"
+        }
+      }
+    },
+    "messagesTokens": {
+      "type": "object",
+      "properties": {
+        "Tokens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/messagesToken"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

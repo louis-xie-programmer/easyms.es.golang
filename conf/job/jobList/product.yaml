@@ -1,0 +1,5 @@
+mfgpartinsert:
+    cron: 0/2 * * * * ?
+    lastid: 68704657
+    limit: 1000
+    status: 0

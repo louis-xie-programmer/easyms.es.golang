@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "easyms-es/protos/messages";
+option csharp_namespace = "GrpcSearchClient.Messages";
+
+package messages;
+
+// 单型号下的产品价格搜索参数
+message PriceSearchParam {
+  int32  PID = 1;
+  int32  Size = 2;
+  int32  From = 3;
+}
+
+// 单型号下的产品价格返回结果
+message SearchPricesResult {
+  int32 PID = 1;
+  int32 Total = 2;
+  int32 From = 3;
+  int32 Size = 4;
+  repeated ESStockPrice Data = 5;
+}
+
+// 产品价格
+message ESStockPrice {
+  string SID = 1;
+  string ProductName = 2;
+  int32 DistributorType = 5;
+  int32 DistributorID = 6;
+  string Distributor = 7;
+  int32 StockNum = 8;
+  string Currency = 9;
+  float Price1 = 10;
+  float Price2 = 11;
+  float  Price3 = 12;
+  float  Price4 = 13;
+  float  Price5 = 14;
+  string UpdatedUtc = 15;
+  bool IsAuthorizeddealer = 16;
+}
