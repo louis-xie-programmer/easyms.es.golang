@@ -45,7 +45,7 @@ func init() {
 	timeout := config.GetSyncConfig_Type[int]("", "common.elasticsearch.timeout")
 
 	// es名称及store
-	model.EsProductIndexName = config.GetSyncConfig("", "common.elasticsearch.mfgpartindex")
+	model.EsProductIndexName = config.GetSyncConfig("", "common.elasticsearch.productindex")
 	model.EsPriceIndexName = config.GetSyncConfig("", "common.elasticsearch.pricestockindex")
 
 	store1, err := easyes.NewStore(easyes.StoreConfig{

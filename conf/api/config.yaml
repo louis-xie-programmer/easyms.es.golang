@@ -14,7 +14,7 @@ common:
   elasticsearch:
     address: https://192.168.127.250:9200,https://192.168.127.252:9200
     cacert: ./certs/http_ca.crt
-    mfgpartindex: mfgpart_easy
+    productindex: product_easy
     password: OWGVDa4515owSd7fBXdX
     pricestockindex: stockprice
     username: elastic

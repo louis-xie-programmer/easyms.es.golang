@@ -16,7 +16,7 @@ type Product struct {
 	// 产品名称分词
 	StandProductName string `json:"StandProductName,omitempty" es:"type:text,analyzer:easy_product_max,search_analyzer:easy_product"`
 	// 品牌分词
-	StandBrand string `json:"StandBrand,omitempty" es:"type:text,analyzer:easy_mfg,search_analyzer:easy_brand"`
+	StandBrand string `json:"StandBrand,omitempty" es:"type:text,analyzer:easy_brand,search_analyzer:easy_brand"`
 	// 一级分类 + 空格 + 二级分类， 去除特殊符； 空格分词
 	StandCategory string `json:"StandCategory,omitempty" es:"type:text,analyzer:easy_category,search_analyzer:easy_category"` //easy_category
 	PassiveParam  string `json:"PassiveParam,omitempty" es:"type:text,analyzer:easy_param,search_analyzer:easy_param"`        //easy_param

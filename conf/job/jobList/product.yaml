@@ -1,4 +1,4 @@
-mfgpartinsert:
+product:
     cron: 0/2 * * * * ?
     lastid: 68704657
     limit: 1000

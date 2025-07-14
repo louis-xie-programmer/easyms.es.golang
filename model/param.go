@@ -45,7 +45,7 @@ type ProductIndexParam struct {
 
 // ProductAggSearchParam 产品聚合搜索参数
 type CategoryAggSearchParam struct {
-	MfgID int32 `json:"MfgID,omitempty"`
+	BrandID int32 `json:"BrandID,omitempty"`
 }
 
 type Attribute struct {

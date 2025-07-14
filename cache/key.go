@@ -17,9 +17,9 @@ func GetCategorySearchCategoryAggKey(prentCategory string, category string) stri
 	return fmt.Sprintf("%s:categoryagg", getCategorySearchAggKey(prentCategory, category))
 }
 
-// GetCategorySearchMfgAggKey 分类搜索品牌聚合缓存命名
-func GetCategorySearchMfgAggKey(prentCategory string, category string) string {
-	return fmt.Sprintf("%s:mfgagg", getCategorySearchAggKey(prentCategory, category))
+// GetCategorySearchBrandAggKey 分类搜索品牌聚合缓存命名
+func GetCategorySearchBrandAggKey(prentCategory string, category string) string {
+	return fmt.Sprintf("%s:brandagg", getCategorySearchAggKey(prentCategory, category))
 }
 
 // GetCategorySearchDistributorAggKey 分类搜索分销商聚合缓存命名
@@ -47,10 +47,10 @@ func GetIndexKeyWithCategoryId(categoryId int) string {
 	return fmt.Sprintf("indexs-%d", categoryId)
 }
 
-// GetMfgCategoryAggKey 品牌下索引聚合
-func GetMfgCategoryAggKey(mfgId int, prentCategoryId int) string {
-	return fmt.Sprintf("mfgaggs-%d:%d", mfgId, prentCategoryId)
+// GetBrandCategoryAggKey 品牌下索引聚合
+func GetBrandCategoryAggKey(brandId int, prentCategoryId int) string {
+	return fmt.Sprintf("brandaggs-%d:%d", brandId, prentCategoryId)
 }
-func GetMfgCategoryAggParentCategoryKey(mfgId int) string {
-	return fmt.Sprintf("mfgaggs-%d:pcategoryagg", mfgId)
+func GetBrandCategoryAggParentCategoryKey(brandId int) string {
+	return fmt.Sprintf("brandaggs-%d:pcategoryagg", brandId)
 }
