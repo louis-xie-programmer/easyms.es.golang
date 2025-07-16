@@ -24,7 +24,7 @@ func QueryProduct(param string, limit int) ([]model.Product, []model.Product, in
 	var delProducts []model.Product
 
 	// 产品表数据， 注意：对数据做分类处理：新增+更新，删除
-	sql := fmt.Sprintf(`SELECT TOP (%d) PID,ProductName,Brand,BrandID,CategoryID,ParentID,IsDeleted FROM Products with(nolock) WHERE %s ORDER BY PID`, limit, param)
+	//sql := fmt.Sprintf(`SELECT TOP (%d) PID,ProductName,Brand,BrandID,CategoryID,ParentID,IsDeleted FROM Products with(nolock) WHERE %s ORDER BY PID`, limit, param)
 	type Product struct {
 		PID         int
 		ProductName string
@@ -34,8 +34,10 @@ func QueryProduct(param string, limit int) ([]model.Product, []model.Product, in
 		ParentID    int
 		IsDeleted   bool
 	}
+
 	var ps []Product
-	db.BasicDB.Raw(sql).Scan(&addProducts)
+	//db.BasicDB.Raw(sql).Scan(&addProducts)
+	db.BasicDB.Table("Products").Where(param).Order("PID").Limit(limit).Find(&ps)
 	if len(addProducts) < 1 {
 		return nil, nil, 0, nil
 	}

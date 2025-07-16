@@ -1,15 +1,16 @@
 package main
 
 import (
-	"crypto/tls"
 	"easyms-es/api/logger"
 	"easyms-es/api/router"
 	"easyms-es/model"
 	"easyms-es/service/prices"
 	"easyms-es/service/products"
-	"github.com/quic-go/quic-go/http3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"log"
+	"net"
 	"net/http"
 	"runtime"
 	"time"
@@ -44,7 +45,7 @@ func init() {
 	certFilePath = config.GetSyncConfig(configName, "common.server.cert")
 	keyFilePath = config.GetSyncConfig(configName, "common.server.key")
 	logConnString = config.GetSyncConfig(configName, "common.logdb.connstring")
-	
+
 	// 读取Elasticsearch索引名称和超时设置
 	esProductIndexName = config.GetSyncConfig(configName, "common.elasticsearch.productindex")
 	esPriceStockIndexName = config.GetSyncConfig(configName, "common.elasticsearch.pricestockindex")
@@ -89,34 +90,45 @@ func main() {
 		log.Printf(http.ListenAndServe(":6060", nil).Error())
 	}()
 
-	// 创建HTTP路由复用器
-	mux := http.NewServeMux()
-
-	// 创建带拦截器的gRPC服务器
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(logger.GrpcLoggerUnaryInterceptor()),
-	)
-
-	// 注册gRPC服务到路由
-	router.InitGrpc(grpcServer)
-	mux.Handle("/", grpcServer)
-
-	// 配置HTTPS服务器参数
-	server := &http.Server{
-		Addr:    ":50051",
-		Handler: mux,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-	}
-
-	// 启动HTTP/2服务
+	//http3 + grpc init 注意尚未解决net6客户端兼容问题,
 	go func() {
-		log.Printf("Starting HTTP/2 server on :50051")
-		log.Fatal(server.ListenAndServeTLS("server.crt", "server.key"))
+		err := router.EasyGrpcQUICServer("grpc.easy.bom:50051", "./certs/server.crt", "./certs/server.key")
+		if err != nil {
+			log.Printf("failed to Echo QUIC Server. %s", err.Error())
+			return
+		}
+		log.Printf("gRPC server listening at %s", "grpc.easy.bom:50051")
 	}()
 
-	// 启动HTTP/3服务
-	log.Printf("Starting HTTP/3 server on :50051")
-	log.Fatal(http3.ListenAndServeQUIC(":50051", certFilePath, keyFilePath, mux))
+	cert, err := credentials.NewServerTLSFromFile(certFilePath, keyFilePath)
+	if err != nil {
+		log.Fatalf("failed to load TLS certificates: %v", err)
+	}
+
+	// keepalive 设置
+	var keepAliveArgs = keepalive.ServerParameters{
+		Time:              10 * time.Second,
+		Timeout:           30 * time.Second,
+		MaxConnectionIdle: 3 * time.Minute,
+	}
+
+	//grpc init
+	grpcServer := grpc.NewServer(
+		grpc.Creds(cert),
+		grpc.KeepaliveParams(keepAliveArgs),
+		grpc.UnaryInterceptor(logger.GrpcLoggerUnaryInterceptor()),
+	)
+	router.InitGrpc(grpcServer)
+	listen, err := net.Listen("tcp", "grpc.easy.bom:50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	log.Printf("gRPC server listening at %v", listen.Addr())
+
+	if err := grpcServer.Serve(listen); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
+	logger.CloseLogging()
 }

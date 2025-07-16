@@ -79,9 +79,16 @@ func (job *EasyJob) Run() {
 		Interval:    0,
 	})
 
-	sql := "SELECT max(PID) FROM Products with(nolock)"
 	var maxPid int
-	db.BasicDB.Raw(sql).Scan(&maxPid)
+	//sql := "SELECT max(PID) FROM Products with(nolock)"
+	//db.BasicDB.Raw(sql).Scan(&maxPid)
+
+	type Product struct {
+		PID int
+	}
+	var lastUser Product
+	db.BasicDB.Table("Products").Last(&lastUser)
+	maxPid = lastUser.PID
 
 	if job.JobConfig.Maxpid < maxPid {
 		err = job.SaveSyncConfig(maxPid)
