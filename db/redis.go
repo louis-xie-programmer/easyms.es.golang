@@ -12,16 +12,23 @@ var EasyRedis *redis.Client
 
 // InitRedis 初始化redis client
 func InitRedis() {
-	var (
-		address  = config.GetSyncConfig("", "common.redis.address")
-		password = config.GetSyncConfig("", "common.redis.password")
-		dbNum    = config.GetSyncConfig_Type[int]("", "common.redis.db")
-	)
+	address, exit := config.GetAppConfigValue[string]("common.redis.address")
+	if !exit {
+		panic("redis address not found")
+	}
+	password, exit := config.GetAppConfigValue[string]("common.redis.password")
+	if !exit {
+		panic("redis password not found")
+	}
+	dbNum, exit := config.GetAppConfigValue[int]("common.redis.db")
+	if !exit {
+		panic("redis db not found")
+	}
 
 	EasyRedis = redis.NewClient(&redis.Options{
-		Addr:     address,
-		Password: password, // no password set
-		DB:       dbNum,    // use default DB
+		Addr:     *address,
+		Password: *password, // no password set
+		DB:       *dbNum,    // use default DB
 	})
 }
 

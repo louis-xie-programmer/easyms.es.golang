@@ -1,141 +1,155 @@
 package config
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"sync"
 )
 
-var EasyViperConfigList []*ViperConfig
+// easyAppConfig 系统配置
+var easyAppConfig *ViperConfig
+
+// easyTaskConfigList 配置列表
+var easyTaskConfigList map[string]*ViperConfig
 
 type ViperConfig struct {
-	JobName    string
+	Name       string
 	ConfigFile *viper.Viper
 	Mutex      sync.RWMutex
 }
 
 // InitConfig 初始化函数，用于设置默认配置
-func InitConfig() {
-	EasyViperConfigList = []*ViperConfig{}
+func InitConfig(appName string) {
+	//创建系统配置
+	CreateAppConfig(appName, "config.yaml")
+
+	easyTaskConfigList = make(map[string]*ViperConfig)
 }
 
-// EasyViperConfigListJobNameFirst 根据JobName查找 ViperConfig
-func EasyViperConfigListJobNameFirst(jobName string) *ViperConfig {
-	if jobName == "" {
-		jobName = "config"
-	}
-	for _, viperConfig := range EasyViperConfigList {
-		if viperConfig.JobName == jobName {
-			return viperConfig
-		}
-	}
-	return nil
+// GetAppConfig 获取项目默认配置
+func GetAppConfig() *ViperConfig {
+	return easyAppConfig
 }
 
-// CreateConfig 追加创建配置文件实例
-func CreateConfig(jobName string, filename string) {
-	v := EasyViperConfigListJobNameFirst(jobName)
+// GetTaskConfig 获取任务配置
+func GetTaskConfig(name string) *ViperConfig {
+	v, exists := easyTaskConfigList[name]
+	if !exists {
+		return nil
+	}
+	return v
+}
 
-	// 如果 jobName 不存在，则创建并追加到列表
+// CreateAppConfig 创建项目默认配置
+func CreateAppConfig(appName string, filename string) {
+	easyAppConfig = &ViperConfig{
+		Name:       appName,
+		ConfigFile: viper.New(),
+	}
+	easyAppConfig.Mutex.Lock()
+	defer easyAppConfig.Mutex.Unlock()
+
+	easyAppConfig.ConfigFile.SetConfigFile(fmt.Sprintf("/conf/%s/%s", appName, filename))
+	if err := easyAppConfig.ConfigFile.ReadInConfig(); err != nil {
+		log.Fatalf("Error loading config file %s: %s", filename, err)
+	}
+}
+
+// CreateTaskConfig 创建任务配置
+func CreateTaskConfig(name string, filename string) {
+	v := GetTaskConfig(name)
+	// 如果 appName 不存在，则创建并追加到列表
 	if v == nil {
 		v = &ViperConfig{
-			JobName:    jobName,
+			Name:       name,
 			ConfigFile: viper.New(),
 		}
-		EasyViperConfigList = append(EasyViperConfigList, v)
+		easyTaskConfigList[name] = v
 	}
 
 	v.Mutex.Lock()
 	defer v.Mutex.Unlock()
 
 	v.ConfigFile.SetConfigFile(filename)
-	if err := v.ConfigFile.ReadInConfig(); err != nil {
-		log.Fatalf("Error loading config file %s: %s", filename, err)
+}
+
+// GetTaskConfigValue 获取配置
+func GetTaskConfigValue[T any](name string) (*T, bool) {
+	v := GetTaskConfig(name)
+	var value T
+	err := v.ConfigFile.Unmarshal(value)
+	if err != nil {
+		return nil, false
 	}
+	return &value, true
 }
 
-// GetSyncConfig 获取配置
-func GetSyncConfig(jobName string, key string) string {
-	v := EasyViperConfigListJobNameFirst(jobName)
-
-	return v.ConfigFile.GetString(key)
+// GetAppConfigValue 获取系统配置
+func GetAppConfigValue[T any](key string) (*T, bool) {
+	v := GetAppConfig()
+	return getConfigValue[T](v, key)
 }
 
-// GetSyncConfig_Type 获取配置 Type
-func GetSyncConfig_Type[T any](jobName string, key string) T {
-	v := EasyViperConfigListJobNameFirst(jobName)
+// 获取配置值
+func getConfigValue[T any](v *ViperConfig, key string) (*T, bool) {
+	if v == nil {
+		return nil, false
+	}
+	v.Mutex.Lock()
+	defer v.Mutex.Unlock()
 
-	var zero T // 定义类型T的零值
-	var result any
-
-	// 使用反射判断类型，根据类型调用不同的 viper 方法
-	switch any(zero).(type) {
-	case string:
-		result = v.ConfigFile.GetString(key)
-	case int:
-		result = v.ConfigFile.GetInt(key)
-	case float64:
-		result = v.ConfigFile.GetFloat64(key)
-	case int64:
-		result = v.ConfigFile.GetInt64(key)
-	case bool:
-		result = v.ConfigFile.GetBool(key)
-	case []int:
-		result = v.ConfigFile.GetIntSlice(key)
-	case []string:
-		result = v.ConfigFile.GetStringSlice(key)
-	case map[string]interface{}:
-		result = v.ConfigFile.GetStringMap(key)
-	case map[string]string:
-		result = v.ConfigFile.GetStringMapString(key)
-	default:
-		return zero
+	if v.ConfigFile.IsSet(key) == false {
+		return nil, false
 	}
 
-	// 类型断言并返回结果
-	if val, ok := result.(T); ok {
-		return val
-	}
-	return zero
+	value := v.ConfigFile.Get(key).(T)
+
+	return &value, true
 }
 
-// UpdateSyncConfig 修改配置
-func UpdateSyncConfig(jobName string, key any, value any) {
-	v := EasyViperConfigListJobNameFirst(jobName)
+// UpdateAppConfig 修改配置
+func UpdateAppConfig(key any, value any) {
+	easyAppConfig.Mutex.Lock()
+	defer easyAppConfig.Mutex.Unlock()
 
-	v.ConfigFile.Set(key.(string), value)
+	easyAppConfig.ConfigFile.Set(key.(string), value)
 }
 
-// Save 保存配置 写入文件
-func Save(jobName string) error {
-	v := EasyViperConfigListJobNameFirst(jobName)
+// UpdateTaskConfig 修改任务配置
+func UpdateTaskConfig(name string, key any, value any) {
+	v := GetTaskConfig(name)
 
 	v.Mutex.Lock()
 	defer v.Mutex.Unlock()
 
-	if err := v.ConfigFile.WriteConfig(); err != nil {
+	v.ConfigFile.Set(key.(string), value)
+}
+
+// SaveAppConfig 保存配置
+func SaveAppConfig() error {
+	easyAppConfig.Mutex.Lock()
+	defer easyAppConfig.Mutex.Unlock()
+
+	if err := easyAppConfig.ConfigFile.SafeWriteConfig(); err != nil {
 		return err
 	}
 	return nil
 }
 
-//func NewViperConfig(app string) *ViperConfig {
-//	return &ViperConfig{
-//		Path: "./conf/" + app,
-//		Type: "yaml",
-//		Name: "config",
-//	}
-//}
-//
-//func (v *ViperConfig) Load() error {
-//	v.mutex.Lock()
-//	defer v.mutex.Unlock()
-//
-//	viper.AddConfigPath(v.Path)
-//	viper.SetConfigName(v.Name)
-//	viper.SetConfigType(v.Type)
-//	if err := viper.ReadInConfig(); err != nil {
-//		return err
-//	}
-//	return nil
-//}
+// SaveTaskConfig 保存任务配置 写入文件
+func SaveTaskConfig(name string) error {
+	v := GetTaskConfig(name)
+
+	v.Mutex.Lock()
+	defer v.Mutex.Unlock()
+
+	if err := v.ConfigFile.SafeWriteConfig(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func RemoveTaskConfig(name string) {
+	delete(easyTaskConfigList, name)
+}

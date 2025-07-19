@@ -7,7 +7,7 @@ import (
 	"easyms-es/config"
 	easylib "easyms-es/crob_job/lib"
 	"easyms-es/model"
-	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 )
@@ -39,23 +39,23 @@ func (job *RedisCacheEasyJob) DoError(err error, description string) {
 }
 
 func (job *RedisCacheEasyJob) GetSyncConfig() error {
-	settings := config.EasyViperConfigListJobNameFirst(job.JobName).ConfigFile.AllSettings()
-	jsonData, err := json.Marshal(settings[job.JobName])
-	if err != nil {
-		job.DoError(err, "序列化参数失败:")
+	settings, exit := config.GetTaskConfigValue[model.LimitConfig](job.JobName)
+	if !exit {
+		return fmt.Errorf("config is not exit: %s", job.JobName)
 	}
-	return json.Unmarshal(jsonData, &job.JobConfig)
+	job.JobConfig = *settings
+	return nil
 }
 
 func (job *RedisCacheEasyJob) SaveSyncConfig(lastTime int) error {
-	config.UpdateSyncConfig(job.JobName, job.JobName+".lasttime", lastTime)
-	return config.Save(job.JobName)
+	config.UpdateTaskConfig(job.JobName, job.JobName+".lasttime", lastTime)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 // SaveSyncStatusConfig 只对停止,或者因为错误重试过多停止保存
 func (job *RedisCacheEasyJob) SaveSyncStatusConfig(status int) error {
-	config.UpdateSyncConfig(job.JobName, job.JobName+".status", status)
-	return config.Save(job.JobName)
+	config.UpdateTaskConfig(job.JobName, job.JobName+".status", status)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 func (job *RedisCacheEasyJob) Run() {

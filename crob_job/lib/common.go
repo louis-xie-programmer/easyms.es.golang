@@ -15,7 +15,8 @@ import (
 )
 
 func GetMaxPid() int {
-	return config.GetSyncConfig_Type[int]("watchjob", "watchjob.maxpid")
+	maxPid, _ := config.GetAppConfigValue[int]("watchjob.maxpid")
+	return *maxPid
 }
 
 // QueryProduct 查询产品信息，输出插入或更新的商品条目，要删除的商品条目
@@ -37,7 +38,7 @@ func QueryProduct(param string, limit int) ([]model.Product, []model.Product, in
 
 	var ps []Product
 	//db.BasicDB.Raw(sql).Scan(&addProducts)
-	db.BasicDB.Table("Products").Where(param).Order("PID").Limit(limit).Find(&ps)
+	db.TenantPoolInstance.GetTable("Products").Where(param).Order("PID").Limit(limit).Find(&ps)
 	if len(addProducts) < 1 {
 		return nil, nil, 0, nil
 	}
@@ -99,7 +100,7 @@ func QueryStockPrice(sql string, distributorType int) ([]model.StockPrice, []mod
 		IsDeleted             bool
 	}
 	var prices []PriceStock
-	db.DataDB.Raw(sql).Scan(&prices)
+	db.TenantPoolInstance.GetTable("Prices").Raw(sql).Scan(&prices)
 
 	type StepPrice struct {
 		Qty   int

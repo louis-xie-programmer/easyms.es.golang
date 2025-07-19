@@ -21,36 +21,36 @@ import (
 	"time"
 )
 
+var AppName = "job"
+
 // 初始化项目
 func init() {
 	// 日志
-	if err := config.Init("job"); err != nil {
+	if err := config.Init(AppName); err != nil {
 		panic(err)
 	}
 
 	//初始化配置文件数组
-	config.InitConfig()
+	config.InitConfig(AppName)
 
-	//追加主配置文件
-	configName := "config"
-	config.CreateConfig(configName, "./conf/job/"+configName+".yaml")
+	//初始化dbConfig
+	config.CreateDBConfig(AppName)
 
-	// 数据库
-	db.BasicDB = db.InitSqlServerDB("basicsqlserver")
-	db.AnalysisDB = db.InitSqlServerDB("analysissqlserver")
-	db.DataDB = db.InitSqlServerDB("datasqlserver")
-	db.ManageDB = db.InitSqlServerDB("managesqlserver")
-	db.JobDB = db.InitSqlServerDB("jobsqlserver")
+	//创建dbConfig
+	db.TenantPoolInstance = db.NewTenantPool()
 
-	timeout := config.GetSyncConfig_Type[int]("", "common.elasticsearch.timeout")
+	timeout, _ := config.GetAppConfigValue[int]("common.elasticsearch.timeout")
 
 	// es名称及store
-	model.EsProductIndexName = config.GetSyncConfig("", "common.elasticsearch.productindex")
-	model.EsPriceIndexName = config.GetSyncConfig("", "common.elasticsearch.pricestockindex")
+	productIndexName, _ := config.GetAppConfigValue[string]("common.elasticsearch.productindex")
+	priceIndexName, _ := config.GetAppConfigValue[string]("common.elasticsearch.pricestockindex")
+
+	model.EsProductIndexName = *productIndexName
+	model.EsPriceIndexName = *priceIndexName
 
 	store1, err := easyes.NewStore(easyes.StoreConfig{
 		IndexName: model.EsProductIndexName,
-		Timeout:   time.Duration(timeout) * time.Second,
+		Timeout:   time.Duration(*timeout) * time.Second,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -59,7 +59,7 @@ func init() {
 
 	store2, err := easyes.NewStore(easyes.StoreConfig{
 		IndexName: model.EsPriceIndexName,
-		Timeout:   time.Duration(timeout) * time.Second,
+		Timeout:   time.Duration(*timeout) * time.Second,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -117,9 +117,9 @@ func main() {
 		c.Next()
 	})
 
-	webui := config.GetSyncConfig("", "common.webui.root")
+	webui, _ := config.GetAppConfigValue[string]("common.webui.root")
 
-	r.Use(static.Serve("/", static.LocalFile(webui, false)))
+	r.Use(static.Serve("/", static.LocalFile(*webui, false)))
 
 	// 获取任务列表
 	r.GET("/jobs", func(c *gin.Context) {

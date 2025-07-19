@@ -22,50 +22,41 @@ import (
 )
 
 var (
-	// TLS证书路径、日志数据库连接等配置变量
-	certFilePath          = ""
-	keyFilePath           = ""
-	logConnString         = ""
-	esProductIndexName    = ""
-	esPriceStockIndexName = ""
-	timeout               = 30
+	appName string = "api"
 )
 
 // init 初始化应用配置和核心组件
 // 包含配置加载、证书设置、日志系统初始化和Elasticsearch存储服务创建
 func init() {
 	// 初始化配置系统
-	config.InitConfig()
-
-	// 加载主配置文件
-	configName := "config"
-	config.CreateConfig(configName, "./conf/api/"+configName+".yaml")
+	config.InitConfig(appName)
 
 	// 读取服务器证书路径和日志数据库连接字符串
-	certFilePath = config.GetSyncConfig(configName, "common.server.cert")
-	keyFilePath = config.GetSyncConfig(configName, "common.server.key")
-	logConnString = config.GetSyncConfig(configName, "common.logdb.connstring")
-
-	// 读取Elasticsearch索引名称和超时设置
-	esProductIndexName = config.GetSyncConfig(configName, "common.elasticsearch.productindex")
-	esPriceStockIndexName = config.GetSyncConfig(configName, "common.elasticsearch.pricestockindex")
-	timeout = config.GetSyncConfig_Type[int](configName, "common.elasticsearch.timeout")
+	logConnString, exit := config.GetAppConfigValue[string]("common.logdb.connstring")
+	if exit {
+		log.Fatalf("failed to get config value: %s", "common.logdb.connstring")
+	}
 
 	// 使用数据库连接初始化日志系统
-	err := logger.InitLogger(logConnString)
+	err := logger.InitLogger(*logConnString)
 
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
+	// 读取Elasticsearch索引名称和超时设置
+	esProductIndexName, exit := config.GetAppConfigValue[string]("common.elasticsearch.productindex")
+	esPriceStockIndexName, exit := config.GetAppConfigValue[string]("common.elasticsearch.pricestockindex")
+	timeout, exit := config.GetAppConfigValue[int]("common.elasticsearch.timeout")
+
 	// 初始化模型层静态变量
-	model.EsProductIndexName = esProductIndexName
-	model.EsPriceIndexName = esPriceStockIndexName
+	model.EsProductIndexName = *esProductIndexName
+	model.EsPriceIndexName = *esPriceStockIndexName
 
 	// 初始化Elasticsearch存储服务
 	store1, err := easyes.NewStore(easyes.StoreConfig{
 		IndexName: model.EsProductIndexName,
-		Timeout:   time.Duration(timeout) * time.Second,
+		Timeout:   time.Duration(*timeout) * time.Second,
 	})
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -73,7 +64,7 @@ func init() {
 	products.ProductStore = *store1
 	store2, err := easyes.NewStore(easyes.StoreConfig{
 		IndexName: model.EsPriceIndexName,
-		Timeout:   time.Duration(timeout) * time.Second,
+		Timeout:   time.Duration(*timeout) * time.Second,
 	})
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -90,6 +81,15 @@ func main() {
 		log.Printf(http.ListenAndServe(":6060", nil).Error())
 	}()
 
+	certFilePath, exit := config.GetAppConfigValue[string]("common.server.cert")
+	if exit {
+		log.Fatalf("failed to get config value: %s", "common.server.cert")
+	}
+	keyFilePath, exit := config.GetAppConfigValue[string]("common.server.key")
+	if exit {
+		log.Fatalf("failed to get config value: %s", "common.server.key")
+	}
+
 	//http3 + grpc init 注意尚未解决net6客户端兼容问题,
 	go func() {
 		err := router.EasyGrpcQUICServer("grpc.easy.bom:50051", "./certs/server.crt", "./certs/server.key")
@@ -100,7 +100,7 @@ func main() {
 		log.Printf("gRPC server listening at %s", "grpc.easy.bom:50051")
 	}()
 
-	cert, err := credentials.NewServerTLSFromFile(certFilePath, keyFilePath)
+	cert, err := credentials.NewServerTLSFromFile(*certFilePath, *keyFilePath)
 	if err != nil {
 		log.Fatalf("failed to load TLS certificates: %v", err)
 	}
@@ -119,7 +119,7 @@ func main() {
 		grpc.UnaryInterceptor(logger.GrpcLoggerUnaryInterceptor()),
 	)
 	router.InitGrpc(grpcServer)
-	listen, err := net.Listen("tcp", "grpc.easy.bom:50051")
+	listen, err := net.Listen("tcp", "grpc.easy.bom:50052")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

@@ -10,6 +10,7 @@ import (
 	"easyms-es/model"
 	"easyms-es/utility"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,12 +36,23 @@ type Store struct {
 
 // NewStore 构造
 func NewStore(c StoreConfig) (*Store, error) {
-	var (
-		caCertPath = config.GetSyncConfig("", "common.elasticsearch.cacert")
-		esAddress  = config.GetSyncConfig("", "common.elasticsearch.address")
-		esUserName = config.GetSyncConfig("", "common.elasticsearch.username")
-		esPassword = config.GetSyncConfig("", "common.elasticsearch.password")
-	)
+
+	caCertPath, exit := config.GetAppConfigValue[string]("common.elasticsearch.cacert")
+	if !exit {
+		return nil, errors.New("common.elasticsearch.cacert not found")
+	}
+	esAddress, exit := config.GetAppConfigValue[string]("common.elasticsearch.address")
+	if !exit {
+		return nil, errors.New("common.elasticsearch.address not found")
+	}
+	esUserName, exit := config.GetAppConfigValue[string]("common.elasticsearch.username")
+	if !exit {
+		return nil, errors.New("common.elasticsearch.username not found")
+	}
+	esPassword, exit := config.GetAppConfigValue[string]("common.elasticsearch.password")
+	if !exit {
+		return nil, errors.New("common.elasticsearch.password not found")
+	}
 
 	indexName := c.IndexName
 	if indexName == "" {
@@ -48,7 +60,7 @@ func NewStore(c StoreConfig) (*Store, error) {
 	}
 
 	// read es cert file
-	cert, err := ioutil.ReadFile(caCertPath)
+	cert, err := ioutil.ReadFile(*caCertPath)
 
 	if err != nil {
 		//log.Fatalln("common.elasticsearch.cacert error:", err)
@@ -84,9 +96,9 @@ func NewStore(c StoreConfig) (*Store, error) {
 	caCertPool.AppendCertsFromPEM(cert)
 
 	cfg := elasticsearch.Config{
-		Addresses: strings.Split(esAddress, ","),
-		Username:  esUserName,
-		Password:  esPassword,
+		Addresses: strings.Split(*esAddress, ","),
+		Username:  *esUserName,
+		Password:  *esPassword,
 		Transport: fasthttp.NewTransport(&tls.Config{
 			RootCAs:    caCertPool,
 			MinVersion: tls.VersionTLS12,

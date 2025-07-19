@@ -7,7 +7,7 @@ import (
 	easylib "easyms-es/crob_job/lib"
 	"easyms-es/db"
 	"easyms-es/model"
-	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 )
@@ -31,22 +31,22 @@ func (job *EasyJob) DoError(err error, description string) {
 }
 
 func (job *EasyJob) GetSyncConfig() error {
-	settings := config.EasyViperConfigListJobNameFirst(job.JobName).ConfigFile.AllSettings()
-	jsonData, err := json.Marshal(settings[job.JobName])
-	if err != nil {
-		job.DoError(err, "序列化参数失败:")
+	settings, exit := config.GetTaskConfigValue[model.WatchjobConfig](job.JobName)
+	if !exit {
+		return fmt.Errorf("config is not exit: %s", job.JobName)
 	}
-	return json.Unmarshal(jsonData, &job.JobConfig)
+	job.JobConfig = *settings
+	return nil
 }
 
 func (job *EasyJob) SaveSyncConfig(maxpid int) error {
-	config.UpdateSyncConfig(job.JobName, job.JobName+".maxpid", maxpid)
-	return config.Save(job.JobName)
+	config.UpdateTaskConfig(job.JobName, job.JobName+".maxpid", maxpid)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 func (job *EasyJob) SaveSyncStatusConfig(status int) error {
-	config.UpdateSyncConfig(job.JobName, job.JobName+".status", status)
-	return config.Save(job.JobName)
+	config.UpdateTaskConfig(job.JobName, job.JobName+".status", status)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 func (job *EasyJob) Run() {
@@ -87,7 +87,7 @@ func (job *EasyJob) Run() {
 		PID int
 	}
 	var lastUser Product
-	db.BasicDB.Table("Products").Last(&lastUser)
+	db.TenantPoolInstance.GetTable("Products").Last(&lastUser)
 	maxPid = lastUser.PID
 
 	if job.JobConfig.Maxpid < maxPid {

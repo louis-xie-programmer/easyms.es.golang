@@ -54,18 +54,18 @@ var (
 
 func init() {
 	//初始化配置文件数组
-	config.InitConfig()
-
-	//追加主配置文件
-	configName := "config"
-	config.CreateConfig(configName, "./conf/api/"+configName+".yaml")
+	config.InitConfig("job")
 
 	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
 }
 
 func main() {
 	//swagger gin api init
-	gin.SetMode(config.GetSyncConfig("", "common.server.runmode"))
+	runMode, exit := config.GetAppConfigValue[string]("common.server.runmode")
+	if exit == false {
+		log.Fatal("runmode not found")
+	}
+	gin.SetMode(*runMode)
 
 	g := gin.Default()
 
@@ -124,12 +124,12 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err = pb.RegisterProductsSearchServiceHandlerFromEndpoint(ctx, mux, "grpc.easy.dev:50051", opts)
+	err = pb.RegisterProductsSearchServiceHandlerFromEndpoint(ctx, mux, "grpc.easy.dev:50052", opts)
 	if err != nil {
 		log.Fatalf("failed to register gateway: %v", err)
 	}
 
-	err = pb.RegisterPriceSearchServiceHandlerFromEndpoint(ctx, mux, "grpc.easy.dev:50051", opts)
+	err = pb.RegisterPriceSearchServiceHandlerFromEndpoint(ctx, mux, "grpc.easy.dev:50052", opts)
 	if err != nil {
 		log.Fatalf("failed to register gateway: %v", err)
 	}
@@ -143,17 +143,32 @@ func main() {
 
 	g.Any("/v1/*any", gin.WrapH(mux))
 
-	isTls := config.GetSyncConfig_Type[bool]("", "common.server.tls")
+	isTls, exit := config.GetAppConfigValue[bool]("common.server.tls")
+	if exit == false {
+		log.Fatalf("failed to get tls: %v", err)
+	}
+	addr, exit := config.GetAppConfigValue[string]("common.server.addr")
+	if exit == false {
+		log.Fatalf("failed to get addr: %v", err)
+	}
+	cert, exit := config.GetAppConfigValue[string]("common.server.cert")
+	if exit == false {
+		log.Fatalf("failed to get cert: %v", err)
+	}
+	key, exit := config.GetAppConfigValue[string]("common.server.key")
+	if exit == false {
+		log.Fatalf("failed to get key: %v", err)
+	}
 
-	if isTls {
-		log.Printf("开始监听服务器地址: %s\n", "https://"+config.GetSyncConfig("", "common.server.addr"))
-		err = g.RunTLS(config.GetSyncConfig("", "common.server.addr"), config.GetSyncConfig("", "common.server.cert"), config.GetSyncConfig("", "common.server.key"))
+	if *isTls {
+		log.Printf("开始监听服务器地址: %s\n", "https://"+*addr)
+		err = g.RunTLS(*addr, *cert, *key)
 		if err != nil {
 			log.Fatalf("failed to run tls: %v", err)
 		}
 	} else {
-		log.Printf("开始监听服务器地址: %s\n", "http://"+config.GetSyncConfig("", "common.server.addr"))
-		err = g.Run(config.GetSyncConfig("", "common.server.addr"))
+		log.Printf("开始监听服务器地址: %s\n", "http://"+*addr)
+		err = g.Run(*addr)
 		if err != nil {
 			log.Fatalf("failed to run tls: %v", err)
 		}

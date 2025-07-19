@@ -76,23 +76,28 @@ func (jm *JobManager) AddJob(jobName string, jobFunc func()) error {
 	jm.mutex.Lock()
 	defer jm.mutex.Unlock()
 
-	config.CreateConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
+	config.CreateTaskConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
 
-	cronValue := config.GetSyncConfig(jobName, jobName+".cron")
-	statusValue := config.GetSyncConfig_Type[int](jobName, jobName+".status")
-	limitValue := config.GetSyncConfig_Type[int](jobName, jobName+".limit")
-
-	job := &EasyJob{
-		JobName:    jobName,
-		Cron:       cronValue,
-		JobFunc:    jobFunc,
-		RetryCount: -1,
-		Status:     statusValue,
-		Limit:      limitValue,
+	job, ok := config.GetTaskConfigValue[EasyJob](jobName)
+	if !ok {
+		return errors.New("job not found")
 	}
 
-	if statusValue > 0 {
-		entryID, err := jm.cron.AddFunc(cronValue, jobFunc)
+	//cronValue := config.GetSyncConfig(jobName, jobName+".cron")
+	//statusValue := config.GetSyncConfig_Type[int](jobName, jobName+".status")
+	//limitValue := config.GetSyncConfig_Type[int](jobName, jobName+".limit")
+	//
+	//job := &EasyJob{
+	//	JobName:    jobName,
+	//	Cron:       cronValue,
+	//	JobFunc:    jobFunc,
+	//	RetryCount: -1,
+	//	Status:     statusValue,
+	//	Limit:      limitValue,
+	//}
+
+	if job.Status > 0 {
+		entryID, err := jm.cron.AddFunc(job.Cron, jobFunc)
 		if err != nil {
 			return err
 		}
@@ -117,8 +122,8 @@ func (jm *JobManager) RemoveJob(jobName string) error {
 		delete(jm.jobs, jobName)
 	}
 
-	config.UpdateSyncConfig(jobName, jobName, nil)
-	err := config.Save(jobName)
+	config.UpdateTaskConfig(jobName, jobName, nil)
+	err := config.SaveTaskConfig(jobName)
 
 	if err != nil {
 		return err
@@ -138,8 +143,8 @@ func (jm *JobManager) PauseJob(jobName string) error {
 		jm.jobs[jobName].EntryID = 0
 	}
 
-	config.UpdateSyncConfig(jobName, jobName+".status", 0)
-	err := config.Save(jobName)
+	config.UpdateTaskConfig(jobName, jobName+".status", 0)
+	err := config.SaveTaskConfig(jobName)
 
 	if err != nil {
 		return err
@@ -163,18 +168,13 @@ func (jm *JobManager) ResumeJob(jobName string) error {
 	}
 
 	//删除旧配置
-	for i, v := range config.EasyViperConfigList {
-		if v.JobName == jobName {
-			config.EasyViperConfigList = append(config.EasyViperConfigList[:i], config.EasyViperConfigList[i+1:]...)
-			break
-		}
-	}
+	config.RemoveTaskConfig(jobName)
 
 	//重新追加配置文件
-	config.CreateConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
+	config.CreateTaskConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
 
-	config.UpdateSyncConfig(jobName, jobName+".status", 1)
-	err := config.Save(jobName)
+	config.UpdateTaskConfig(jobName, jobName+".status", 1)
+	err := config.SaveTaskConfig(jobName)
 
 	if err != nil {
 		return err
@@ -211,19 +211,15 @@ func (jm *JobManager) UpdateJobCron(jobName string, cron string, limit int) erro
 	jm.jobs[jobName].Status = 1
 
 	//删除旧配置
-	for i, v := range config.EasyViperConfigList {
-		if v.JobName == jobName {
-			config.EasyViperConfigList = append(config.EasyViperConfigList[:i], config.EasyViperConfigList[i+1:]...)
-			break
-		}
-	}
-	//重新追加配置文件
-	config.CreateConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
+	config.RemoveTaskConfig(jobName)
 
-	config.UpdateSyncConfig(jobName, jobName+".cron", cron)
-	config.UpdateSyncConfig(jobName, jobName+".limit", limit)
-	config.UpdateSyncConfig(jobName, jobName+".status", 1)
-	err = config.Save(jobName)
+	//重新追加配置文件
+	config.CreateTaskConfig(jobName, "./conf/job/jobList/"+jobName+".yaml")
+
+	config.UpdateTaskConfig(jobName, jobName+".cron", cron)
+	config.UpdateTaskConfig(jobName, jobName+".limit", limit)
+	config.UpdateTaskConfig(jobName, jobName+".status", 1)
+	err = config.SaveTaskConfig(jobName)
 
 	if err != nil {
 		return err

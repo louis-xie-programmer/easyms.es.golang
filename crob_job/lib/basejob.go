@@ -3,7 +3,6 @@ package lib
 import (
 	"easyms-es/config"
 	"easyms-es/model"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -40,24 +39,24 @@ type EasyFunc interface {
 
 // GetSyncConfig 获取项目配置（任务配置）
 func (job *BaseJob[T]) GetSyncConfig() error {
-	settings := config.EasyViperConfigListJobNameFirst(job.JobName).ConfigFile.AllSettings()
-	jsonData, err := json.Marshal(settings[job.JobName])
-	if err != nil {
-		job.DoError(err, "序列化参数失败:")
+	settings, exit := config.GetTaskConfigValue[T](job.JobName)
+	if exit {
+		return fmt.Errorf("config is not exit: %s", job.JobName)
 	}
-	return json.Unmarshal(jsonData, &job.JobConfig)
+	job.JobConfig = *settings
+	return nil
 }
 
 // SaveSyncConfig 报错任务配置表（状态）
 func (job *BaseJob[T]) SaveSyncConfig(lastId int, lastTime string) error {
 	if lastId > 0 {
-		config.UpdateSyncConfig(job.JobName, job.JobName+".lasTid", lastId)
+		config.UpdateTaskConfig(job.JobName, job.JobName+".lasTid", lastId)
 	}
 	if lastTime != "" {
-		config.UpdateSyncConfig(job.JobName, job.JobName+".lastTime", lastTime)
+		config.UpdateTaskConfig(job.JobName, job.JobName+".lastTime", lastTime)
 	}
 
-	return config.Save(job.JobName)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 // CallBackDo 完成单次任务后，回调方法
@@ -67,8 +66,8 @@ func (job *BaseJob[T]) CallBackDo(data []interface{}, delData []interface{}) err
 
 // SaveSyncStatusConfig 只对停止,或者因为错误重试过多停止保存
 func (job *BaseJob[T]) SaveSyncStatusConfig(status int) error {
-	config.UpdateSyncConfig(job.JobName, job.JobName+".status", status)
-	return config.Save(job.JobName)
+	config.UpdateTaskConfig(job.JobName, job.JobName+".status", status)
+	return config.SaveTaskConfig(job.JobName)
 }
 
 // GetDataPageList 获取Job中要处理的数据（新增或更新数据，删除数据）

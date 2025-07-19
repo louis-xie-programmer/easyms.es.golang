@@ -47,7 +47,7 @@ func EasyGrpcClient() error {
 
 	cred := credentials.NewTLS(tlsConfig)
 
-	conn, err := grpc.NewClient("grpc.easy.dev:50051", grpc.WithTransportCredentials(cred))
+	conn, err := grpc.NewClient("grpc.easy.dev:50052", grpc.WithTransportCredentials(cred))
 	if err != nil {
 		log.Printf("failed to connect to gRPC server: %v", err)
 		return err
